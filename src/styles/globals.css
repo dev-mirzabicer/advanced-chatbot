@@ -1,0 +1,11 @@
+/* src/styles/globals.css */
+
+body {
+  margin: 0;
+  font-family: "Roboto", sans-serif;
+  background-color: #f0f2f5;
+}
+
+input[type="file"] {
+  display: none;
+}
