@@ -1,4 +1,5 @@
 // src/context/StateContext.tsx
+// (unchanged except no references to raisehand or whisper)
 import React, { createContext, useReducer, ReactNode, Dispatch } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -20,25 +21,21 @@ export interface Message {
 interface State {
   messages: Message[];
   assistants: string[]; // ["planner","researcher","software-engineer","mike","academician"]
-  allowedAssistants: string[];
-  contextDocs: string[]; // parsed documents
+  allowedAssistants: string[]; // Not strictly required, but let's keep
+  contextDocs: string[]; 
   loading: boolean;
   conversationRound: number;
+  respondedAssistants: string[];
 }
 
 const initialState: State = {
   messages: [],
-  assistants: [
-    'planner',
-    'researcher',
-    'software-engineer',
-    'mike',
-    'academician',
-  ],
+  assistants: ['planner','researcher','software-engineer','mike','academician'],
   allowedAssistants: [],
   contextDocs: [],
   loading: false,
   conversationRound: 0,
+  respondedAssistants: [],
 };
 
 type Action =
@@ -48,7 +45,9 @@ type Action =
   | { type: 'ADD_CONTEXT_DOC'; payload: string }
   | { type: 'CLEAR_MESSAGES' }
   | { type: 'INCREMENT_ROUND' }
-  | { type: 'RESET_ROUND' };
+  | { type: 'RESET_ROUND' }
+  | { type: 'SET_RESPONDED_ASSISTANTS'; payload: string[] }
+  | { type: 'ADD_RESPONDED_ASSISTANT'; payload: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -65,7 +64,19 @@ function reducer(state: State, action: Action): State {
     case 'INCREMENT_ROUND':
       return { ...state, conversationRound: state.conversationRound + 1 };
     case 'RESET_ROUND':
-      return { ...state, conversationRound: 0 };
+      return { 
+        ...state, 
+        conversationRound: 0, 
+        allowedAssistants: [],
+        respondedAssistants: []
+      };
+    case 'SET_RESPONDED_ASSISTANTS':
+      return { ...state, respondedAssistants: action.payload };
+    case 'ADD_RESPONDED_ASSISTANT':
+      return { 
+        ...state, 
+        respondedAssistants: [...state.respondedAssistants, action.payload]
+      };
     default:
       return state;
   }

@@ -3,7 +3,7 @@ import React, { useState, useContext } from 'react';
 import { Box, TextField, Button } from '@mui/material';
 import { StateContext, DispatchContext } from '../context/StateContext';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+import { callLLM } from '../utils/assistantAPI';
 
 const MessageInput = () => {
   const [input, setInput] = useState('');
@@ -14,313 +14,74 @@ const MessageInput = () => {
     if (!input.trim()) return;
 
     const isCommand = input.trim().startsWith('!');
-
     if (isCommand) {
       handleCommand(input.trim());
     } else {
-      handleUserMessage(input.trim());
+      await handleUserMessage(input.trim());
     }
-
     setInput('');
   };
 
-  const handleCommand = (commandText: string) => {
-    const [command, ...args] = commandText.split(' ');
-
-    switch (command.toLowerCase()) {
-      case '!whisper':
-        handleWhisper(args);
-        break;
-      case '!raisehand':
-        handleRaiseHand();
-        break;
-      case '!allowspeak':
-        handleAllowSpeak(args);
-        break;
-      case '!deny':
-        handleDeny(args);
-        break;
-      case '!yield':
-        handleYield();
-        break;
-      case '!note':
-        handleNote(args);
-        break;
-      case '!permanentnote':
-        handlePermanentNote(args);
-        break;
-      case '!user':
-        handleUserCommand(args);
-        break;
-      default:
-        dispatch({
-          type: 'ADD_MESSAGE',
-          payload: {
-            id: uuidv4(),
-            role: 'moderator',
-            content: `Unknown command: ${command}`,
-            timestamp: Date.now(),
-          },
-        });
-    }
-  };
-
-  const handleWhisper = (args: string[]) => {
-    const receiver = args[0];
-    const message = args.slice(1).join(' ');
-
-    if (!receiver || !message) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !whisper {assistant} {message}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    // Implement the whisper logic, e.g., sending a private message to an assistant
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: `Whisper to ${receiver}: ${message}`,
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handleRaiseHand = () => {
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: 'A user has raised their hand to speak.',
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handleAllowSpeak = (args: string[]) => {
-    const assistant = args[0];
-    if (!assistant) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !allowspeak {assistant}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    dispatch({
-      type: 'SET_ALLOWED_ASSISTANTS',
-      payload: [...state.allowedAssistants, assistant],
-    });
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: `Permission granted for ${assistant} to speak.`,
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handleDeny = (args: string[]) => {
-    const assistant = args[0];
-    if (!assistant) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !deny {assistant}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    dispatch({
-      type: 'SET_ALLOWED_ASSISTANTS',
-      payload: state.allowedAssistants.filter(a => a !== assistant),
-    });
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: `Permission denied for ${assistant} to speak.`,
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handleYield = () => {
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: 'Moderation: Control is now yielded back to the user.',
-        timestamp: Date.now(),
-      },
-    });
-    dispatch({ type: 'RESET_ROUND' });
-  };
-
-  const handleNote = (args: string[]) => {
-    const note = args.join(' ');
-    if (!note) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !note {note}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    dispatch({
-      type: 'ADD_CONTEXT_DOC',
-      payload: note,
-    });
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: 'Note added for the current session.',
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handlePermanentNote = (args: string[]) => {
-    const note = args.join(' ');
-    if (!note) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !permanentnote {note}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    // Implement logic to store permanent notes
-    // For demonstration, we'll treat it similarly to session notes
-    dispatch({
-      type: 'ADD_CONTEXT_DOC',
-      payload: note, // Adjust based on how you handle permanent notes
-    });
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: 'Permanent note added.',
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  const handleUserCommand = (args: string[]) => {
-    const message = args.join(' ');
-    if (!message) {
-      dispatch({
-        type: 'ADD_MESSAGE',
-        payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'Usage: !user {message}',
-          timestamp: Date.now(),
-        },
-      });
-      return;
-    }
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'user',
-        content: message,
-        timestamp: Date.now(),
-      },
-    });
-  };
-
   const handleUserMessage = async (message: string) => {
+    // The user is speaking
     const userMessage = {
       id: uuidv4(),
-      role: 'user',
+      role: 'user' as (
+        | 'user'
+        | 'moderator'
+        | 'assistant-planner'
+        | 'assistant-researcher'
+        | 'assistant-software-engineer'
+        | 'assistant-mike'
+        | 'assistant-academician'
+        | 'context'),
       content: message,
       timestamp: Date.now(),
     };
-
     dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
     dispatch({ type: 'SET_LOADING', payload: true });
 
-    // Prepare the full conversation including context documents
-    const fullConversation = [
+
+    // Prepare the conversation to pass
+    let fullConversation = [
       ...state.messages,
       userMessage,
-      ...state.contextDocs.map((doc, index) => ({
+      ...state.contextDocs.map((doc, idx) => ({
         id: uuidv4(),
         role: 'context',
-        content: `Context Document ${index + 1}: ${doc}`,
+        content: `Context Document ${idx + 1}: ${doc}`,
         timestamp: Date.now(),
       })),
     ];
 
     try {
-      // Call Moderator
-      const moderatorResponse = await axios.post('/api/llm', {
-        messages: fullConversation,
+      // Call the moderator
+      const moderatorResponse = await callLLM('moderator', fullConversation);
+
+      // Add moderator’s message
+      dispatch({
+        type: 'ADD_MESSAGE',
+        payload: {
+          id: uuidv4(),
+          role: 'moderator',
+          content: moderatorResponse,
+          timestamp: Date.now(),
+        },
       });
 
-      let responseText = moderatorResponse.data.text.trim();
-
-      // Post-processing: Remove any code fences
-      responseText = stripCodeFences(responseText);
-
-      if (responseText === "!OK") {
-        // Initial response; session started
-        dispatch({
-          type: 'ADD_MESSAGE',
-          payload: {
+        fullConversation = [
+            ...fullConversation,
+            {
             id: uuidv4(),
             role: 'moderator',
-            content: 'Session started. Please enter your prompt.',
+            content: moderatorResponse,
             timestamp: Date.now(),
-          },
-        });
-        return;
-      }
+            },
+        ];
+    
 
-      // Parse and execute commands from Moderator
-      executeModeratorCommands(responseText);
+      // Parse commands from the moderator to see which assistants to call
+      await parseModeratorCommandsAndTrigger(moderatorResponse, fullConversation);
     } catch (error) {
       console.error('Error during LLM calls:', error);
       dispatch({
@@ -337,94 +98,132 @@ const MessageInput = () => {
     }
   };
 
-  // Function to strip code fences from the response
-  const stripCodeFences = (text: string): string => {
-    // Remove ```json and ``` or any other code fences
-    return text
-      .replace(/```json\s*/gi, '')
-      .replace(/```/g, '')
-      .trim();
-  };
+  const parseModeratorCommandsAndTrigger = async (
+    text: string,
+    conversation: any[]
+  ) => {
+    const lines = text.split('\n').map(l => l.trim());
+    const toAllow: string[] = [];
+    let doYield = false;
 
-  // Function to parse and execute Moderator commands
-
-    const executeModeratorCommands = (commandsText: string) => {
-        const lines = commandsText.split('\n').map(line => line.trim());
-    
-        lines.forEach(commandLine => {
-        if (!commandLine.startsWith('!')) return;
-    
-        const [command, ...args] = commandLine.split(' ');
-    
-        switch (command.toLowerCase()) {
-            case '!ok':
-            // Already handled separately; no action needed
-            break;
-            case '!team':
-            handleTeamCommand(args);
-            break;
-            case '!whisper':
-            handleWhisper(args);
-            break;
-            case '!allowspeak':
-            handleAllowSpeak(args);
-            break;
-            case '!deny':
-            handleDeny(args);
-            break;
-            case '!yield':
-            handleYield();
-            break;
-            case '!note':
-            handleNote(args);
-            break;
-            case '!permanentnote':
-            handlePermanentNote(args);
-            break;
-            case '!user':
-            handleUserCommand(args);
-            break;
-            default:
-            dispatch({
-                type: 'ADD_MESSAGE',
-                payload: {
-                id: uuidv4(),
-                role: 'moderator',
-                content: `Unknown command received from Moderator: ${command}`,
-                timestamp: Date.now(),
-                },
-            });
+    lines.forEach(line => {
+      if (line.startsWith('!allowspeak')) {
+        const parts = line.split(' ');
+        if (parts.length >= 2) {
+          const assistant = parts[1].toLowerCase();
+          toAllow.push(assistant);
         }
-        });
-    };
-    
-  const handleTeamCommand = (args: string[]) => {
-    const message = args.join(' ').replace(/^\{|\}$/g, ''); // Remove surrounding braces
-    if (!message) {
+      } else if (line.startsWith('!deny')) {
+        // We can do something if we want
+      } else if (line.startsWith('!yield')) {
+        doYield = true;
+      }
+      // !user ... might appear but ideally only after the team discussion
+      // !team ... might just be the moderator instructing the team, but we don't do anything special for that in the code for now
+    });
+
+    // If doYield = true, we can reset conversation round or do nothing
+    if (doYield) {
+      // Example: reset or something
+      dispatch({ type: 'RESET_ROUND' });
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
           id: uuidv4(),
           role: 'moderator',
-          content: 'Usage: !team {message}',
+          content: 'Moderator has yielded control to the user.',
           timestamp: Date.now(),
         },
       });
       return;
     }
 
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: {
-        id: uuidv4(),
-        role: 'moderator',
-        content: `Team Message: ${message}`,
-        timestamp: Date.now(),
-      },
-    });
+    // Now for each allowed assistant, call them
+    // Filter out duplicates or already-responded
+    const finalToAllow = toAllow;
 
-    // Here, you can implement logic to distribute the team message to all assistants
-    // For demonstration, we'll assume it's a broadcast message
+    for (const assistant of finalToAllow) {
+        try {
+          // Call the assistant and get their response
+          const assistantResponse = await callLLM(assistant, conversation);
+      
+          // Construct the new message object for the assistant's response
+          const assistantMessage = {
+            id: uuidv4(),
+            role: `assistant-${assistant}` as (
+              | 'user'
+              | 'moderator'
+              | 'assistant-planner'
+              | 'assistant-researcher'
+              | 'assistant-software-engineer'
+              | 'assistant-mike'
+              | 'assistant-academician'
+              | 'context'),
+            content: assistantResponse,
+            timestamp: Date.now(),
+          };
+      
+          // Add the assistant's response to the state
+          dispatch({ type: 'ADD_MESSAGE', payload: assistantMessage });
+      
+          // Update the conversation with the assistant's response
+          conversation = [...conversation, assistantMessage];
+      
+          // Mark the assistant as responded
+          dispatch({ type: 'ADD_RESPONDED_ASSISTANT', payload: assistant });
+      
+          // If the assistant's text might contain a !user or !yield, parse it (future work)
+        } catch (err) {
+          console.error(`Error calling assistant ${assistant}:`, err);
+      
+          // Handle errors by notifying the moderator in the conversation
+          dispatch({
+            type: 'ADD_MESSAGE',
+            payload: {
+              id: uuidv4(),
+              role: 'moderator',
+              content: `Error retrieving response from ${assistant}.`,
+              timestamp: Date.now(),
+            },
+          });
+        }
+      }      
+  };
+
+  // Handling direct user-typed commands
+  const handleCommand = (commandText: string) => {
+    const [command, ...args] = commandText.split(' ');
+
+    switch (command.toLowerCase()) {
+      case '!allowspeak':
+      case '!deny':
+      case '!yield':
+      case '!team':
+      case '!user':
+        // In the new plan, these are moderator commands, but the user typed them manually?
+        // We can either treat them as if the moderator did it, or just show an error.
+        dispatch({
+          type: 'ADD_MESSAGE',
+          payload: {
+            id: uuidv4(),
+            role: 'moderator',
+            content: `(User typed) ${commandText}`,
+            timestamp: Date.now(),
+          },
+        });
+        break;
+      default:
+        dispatch({
+          type: 'ADD_MESSAGE',
+          payload: {
+            id: uuidv4(),
+            role: 'moderator',
+            content: `Unknown command: ${command}`,
+            timestamp: Date.now(),
+          },
+        });
+        break;
+    }
   };
 
   return (
@@ -438,12 +237,14 @@ const MessageInput = () => {
         onKeyPress={(e) => {
           if (e.key === 'Enter') handleSend();
         }}
+        disabled={state.loading}
       />
       <Button
         variant="contained"
         color="primary"
         onClick={handleSend}
         style={{ marginLeft: '8px' }}
+        disabled={state.loading}
       >
         Send
       </Button>
