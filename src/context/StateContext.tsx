@@ -23,6 +23,7 @@ interface Chat {
   contextDocs: string[];
   conversationRound: number;
   respondedAssistants: string[];
+  allowedAssistants: string[];
 }
 
 interface State {
@@ -77,6 +78,7 @@ function reducer(state: State, action: Action): State {
             contextDocs: [],
             conversationRound: 0,
             respondedAssistants: [],
+            allowedAssistants: []
           },
         },
         activeChatId: action.payload,
