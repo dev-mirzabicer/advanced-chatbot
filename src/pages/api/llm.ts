@@ -55,10 +55,12 @@ export default async function handler(
   }
 
   let { messages, role } = req.body;
-  if (!messages || !role) {
+  const { chatId } = req.body; // Added chatId
+
+  if (!messages || !role || !chatId) {
     return res
       .status(400)
-      .json({ error: "Missing messages or role in request body" });
+      .json({ error: "Missing messages, role, or chatId in request body" });
   }
 
   // Validate the role

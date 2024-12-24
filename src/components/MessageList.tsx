@@ -1,14 +1,23 @@
 // src/components/MessageList.tsx
-import React, { useContext, useEffect, useRef } from 'react';
-import { StateContext } from '../context/StateContext';
-import { Box, Typography, Paper } from '@mui/material';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { StateContext, DispatchContext } from '../context/StateContext';
+import { Box, Typography, Paper, IconButton, Tooltip, TextField } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /**
- * Capitalizes the first letter of a string.
+ * Capitalizes the first letter of each word in a string.
  * @param text - The string to capitalize.
  * @returns The capitalized string.
  */
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+const capitalizeWords = (text: string) =>
+  text
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
 /**
  * Determines the background color based on the assistant's role.
@@ -22,7 +31,7 @@ const getAssistantColor = (role: string): string => {
       return '#fce4ec'; // Pinkish for Researcher
     case 'planner':
       return '#e8f5e9'; // Greenish for Planner
-    case 'software engineer':
+    case 'software-engineer':
       return '#e3f2fd'; // Blueish for Software Engineer
     case 'mike':
       return '#fff3e0'; // Orangeish for Mike
@@ -34,8 +43,14 @@ const getAssistantColor = (role: string): string => {
 };
 
 const MessageList = () => {
-  const { messages } = useContext(StateContext);
+  const { chats, activeChatId } = useContext(StateContext);
+  const messages = chats[activeChatId]?.messages || [];
+  const dispatch = useContext(DispatchContext);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+
+  // State for editing messages
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftContent, setDraftContent] = useState<string>('');
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,9 +65,29 @@ const MessageList = () => {
     if (role === 'user') return 'User';
     if (role === 'moderator') return 'Moderator';
     if (role.startsWith('assistant-'))
-      return `Assistant (${capitalize(role.split('-')[1].replace('-', ' '))})`;
+      return `Assistant: ${capitalizeWords(role.split('-')[1])}`;
     if (role === 'context') return 'Context Document';
     return role;
+  };
+
+  const handleEditClick = (messageId: string, content: string) => {
+    setEditingId(messageId);
+    setDraftContent(content);
+  };
+
+  const handleSave = (messageId: string) => {
+    if (draftContent.trim() === '') return;
+    dispatch({
+      type: 'UPDATE_MESSAGE',
+      payload: { chatId: activeChatId, id: messageId, newContent: draftContent },
+    });
+    setEditingId(null);
+    setDraftContent('');
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setDraftContent('');
   };
 
   return (
@@ -67,7 +102,7 @@ const MessageList = () => {
           </Typography>
           <Paper
             elevation={1}
-            style={{
+            sx={{
               padding: '10px',
               backgroundColor:
                 msg.role === 'user'
@@ -79,7 +114,47 @@ const MessageList = () => {
                   : '#f5f5f5',
             }}
           >
-            <Typography variant="body1">{msg.content}</Typography>
+            {editingId === msg.id ? (
+              // Editing mode
+              <Box display="flex" alignItems="center">
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                />
+                <Tooltip title="Save">
+                  <IconButton onClick={() => handleSave(msg.id)}>
+                    <CheckIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Cancel">
+                  <IconButton onClick={handleCancel}>
+                    <CancelIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ) : (
+              // Display mode
+              <Box display="flex" alignItems="center">
+                <Box flexGrow={1}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </Box>
+                {msg.role === 'user' && (
+                  <Tooltip title="Edit Message">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditClick(msg.id, msg.content)}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
           </Paper>
         </Box>
       ))}

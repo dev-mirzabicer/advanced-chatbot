@@ -1,12 +1,13 @@
 // src/components/PDFUpload.tsx
 import React, { useContext } from 'react';
 import { Box, Button } from '@mui/material';
-import { DispatchContext } from '../context/StateContext';
+import { DispatchContext, StateContext } from '../context/StateContext';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 const PDFUpload = () => {
   const dispatch = useContext(DispatchContext);
+  const { activeChatId } = useContext(StateContext);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -29,17 +30,20 @@ const PDFUpload = () => {
       // Add context document
       dispatch({
         type: 'ADD_CONTEXT_DOC',
-        payload: text,
+        payload: { chatId: activeChatId, doc: text },
       });
 
-      // Optionally, notify the user
+      // Notify the user
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'A PDF has been uploaded and parsed successfully.',
-          timestamp: Date.now(),
+          chatId: activeChatId,
+          message: {
+            id: uuidv4(),
+            role: 'moderator',
+            content: 'A PDF has been uploaded and parsed successfully.',
+            timestamp: Date.now(),
+          },
         },
       });
     } catch (error) {
@@ -47,10 +51,13 @@ const PDFUpload = () => {
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
-          id: uuidv4(),
-          role: 'moderator',
-          content: 'There was an error uploading or parsing your PDF.',
-          timestamp: Date.now(),
+          chatId: activeChatId,
+          message: {
+            id: uuidv4(),
+            role: 'moderator',
+            content: 'There was an error uploading or parsing your PDF.',
+            timestamp: Date.now(),
+          },
         },
       });
     }

@@ -3,13 +3,13 @@ import React from 'react';
 import { Box } from '@mui/material';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+import PDFUpload from './PDFUpload';
 
 const Chat = () => {
   return (
     <Box
       display="flex"
       flexDirection="column"
-      justifyContent="space-between"
       height="80vh"
       p={2}
       border="1px solid #ccc"
@@ -17,6 +17,9 @@ const Chat = () => {
     >
       <Box overflow="auto" flexGrow={1}>
         <MessageList />
+      </Box>
+      <Box mt={2}>
+        <PDFUpload />
       </Box>
       <Box mt={2}>
         <MessageInput />
