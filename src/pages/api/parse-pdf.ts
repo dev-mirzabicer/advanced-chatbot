@@ -27,7 +27,7 @@ export default async function handler(
       return res.status(500).json({ error: "Error parsing the file" });
     }
 
-    const file = files.file as formidable.File;
+    const file = files.file ? files.file[0] : undefined;
 
     if (!file) {
       return res.status(400).json({ error: "No file uploaded" });
