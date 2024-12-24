@@ -43,14 +43,14 @@ const MessageInput = () => {
 
     // Prepare the conversation to pass
     let fullConversation = [
-      ...state.chats[state.activeChatId].messages,
+      ...(state.chats[state.activeChatId]?.messages || []),
       userMessage,
-      ...state.chats[state.activeChatId].contextDocs.map((doc, idx) => ({
+      ...(state.chats[state.activeChatId]?.contextDocs?.map((doc, idx) => ({
         id: uuidv4(),
         role: 'context',
         content: `Context Document ${idx + 1}: ${doc}`,
         timestamp: Date.now(),
-      })),
+      })) || []),
     ];
 
     try {

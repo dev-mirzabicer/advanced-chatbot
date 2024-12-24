@@ -1,4 +1,5 @@
 // src/components/Layout.tsx
+
 import React from 'react';
 import {
   AppBar,
@@ -16,6 +17,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete'; // Ensure this is imported
 import { useContext, useState } from 'react';
 import { StateContext, DispatchContext } from '../context/StateContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,6 +39,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     dispatch({ type: 'SWITCH_CHAT', payload: newChatId });
   };
 
+  const handleDeleteChat = (chatId: string) => {
+    if (confirm('Are you sure you want to delete this chat? This action cannot be undone.')) {
+      dispatch({ type: 'DELETE_CHAT', payload: { chatId } });
+    }
+  };
+
   const drawer = (
     <div>
       <Toolbar>
@@ -47,7 +55,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Divider />
       <List>
         {Object.keys(chats).map((chatId) => (
-          <ListItem key={chatId} disablePadding>
+          <ListItem key={chatId} disablePadding secondaryAction={
+            <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteChat(chatId)}>
+              <DeleteIcon />
+            </IconButton>
+          }>
             <ListItemButton
               selected={chatId === activeChatId}
               onClick={() => dispatch({ type: 'SWITCH_CHAT', payload: chatId })}

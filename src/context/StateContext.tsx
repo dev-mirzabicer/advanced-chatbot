@@ -54,7 +54,9 @@ type Action =
   | { type: 'CREATE_CHAT'; payload: string }
   | { type: 'SWITCH_CHAT'; payload: string }
   | { type: 'SET_CHATS_FROM_STORAGE'; payload: Record<string, Chat> }
-  | { type: 'UPDATE_MESSAGE'; payload: { chatId: string; id: string; newContent: string } };
+  | { type: 'UPDATE_MESSAGE'; payload: { chatId: string; id: string; newContent: string } }
+  | { type: 'DELETE_MESSAGE_AND_SUBSEQUENT'; payload: { chatId: string; messageId: string } }
+  | { type: 'DELETE_CHAT'; payload: { chatId: string } };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -91,7 +93,7 @@ function reducer(state: State, action: Action): State {
           ...state.chats,
           [action.payload.chatId]: {
             ...state.chats[action.payload.chatId],
-            messages: [...state.chats[action.payload.chatId].messages, action.payload.message],
+            messages: [...(state.chats[action.payload.chatId]?.messages || []), action.payload.message],
           },
         },
       };
@@ -198,6 +200,47 @@ function reducer(state: State, action: Action): State {
           },
         },
       };
+    
+      case 'DELETE_MESSAGE_AND_SUBSEQUENT': {
+        const { chatId, messageId } = action.payload;
+        const chat = state.chats[chatId];
+        if (!chat) return state;
+  
+        const indexOfMessage = chat.messages.findIndex((msg) => msg.id === messageId);
+        if (indexOfMessage === -1) return state;
+  
+        const updatedMessages = chat.messages.slice(0, indexOfMessage);
+  
+        return {
+          ...state,
+          chats: {
+            ...state.chats,
+            [chatId]: {
+              ...chat,
+              messages: updatedMessages,
+            },
+          },
+        };
+      }
+  
+      case 'DELETE_CHAT': {
+        const { chatId } = action.payload;
+        const newChats = { ...state.chats };
+        delete newChats[chatId];
+  
+        let newActiveChatId = state.activeChatId;
+        if (chatId === state.activeChatId) {
+          const remainingIds = Object.keys(newChats);
+          newActiveChatId = remainingIds.length > 0 ? remainingIds[0] : '';
+        }
+  
+        return {
+          ...state,
+          chats: newChats,
+          activeChatId: newActiveChatId,
+        };
+      }
+
     default:
       return state;
   }
