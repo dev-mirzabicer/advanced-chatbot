@@ -1,18 +1,11 @@
 // src/context/StateContext.tsx
 import React, { createContext, useReducer, ReactNode, Dispatch, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { role } from '../utils/types';
 
 export interface Message {
   id: string;
-  role:
-    | 'user'
-    | 'moderator'
-    | 'assistant-planner'
-    | 'assistant-researcher'
-    | 'assistant-software-engineer'
-    | 'assistant-mike'
-    | 'assistant-academician'
-    | 'context';
+  role: role,
   content: string;
   timestamp: number;
 }
@@ -37,7 +30,7 @@ interface State {
 const initialState: State = {
   chats: {},
   activeChatId: '',
-  assistants: ['planner', 'researcher', 'software-engineer', 'mike', 'academician'],
+  assistants: ['planner', 'researcher', 'software-engineer', 'mike', 'academician', 'industrial-engineer'],
   allowedAssistants: [],
   loading: false,
 };

@@ -4,6 +4,7 @@ import { Box, TextField, Button } from '@mui/material';
 import { StateContext, DispatchContext } from '../context/StateContext';
 import { v4 as uuidv4 } from 'uuid';
 import { callLLM } from '../utils/assistantAPI';
+import { role } from '../utils/types';
 
 const MessageInput = () => {
   const [input, setInput] = useState('');
@@ -26,15 +27,7 @@ const MessageInput = () => {
     // The user is speaking
     const userMessage = {
       id: uuidv4(),
-      role: 'user' as
-        | 'user'
-        | 'moderator'
-        | 'assistant-planner'
-        | 'assistant-researcher'
-        | 'assistant-software-engineer'
-        | 'assistant-mike'
-        | 'assistant-academician'
-        | 'context',
+      role: 'user' as role,
       content: message,
       timestamp: Date.now(),
     };
@@ -60,15 +53,7 @@ const MessageInput = () => {
       // Add moderator’s message
       const moderatorMessage = {
         id: uuidv4(),
-        role: 'moderator' as
-          | 'user'
-          | 'moderator'
-          | 'assistant-planner'
-          | 'assistant-researcher'
-          | 'assistant-software-engineer'
-          | 'assistant-mike'
-          | 'assistant-academician'
-          | 'context',
+        role: 'moderator' as role,
         content: moderatorResponse,
         timestamp: Date.now(),
       };
@@ -141,15 +126,7 @@ const MessageInput = () => {
         const assistantResponse = await callLLM(assistant, conversation, activeChatId);
         const assistantMessage = {
           id: uuidv4(),
-          role: `assistant-${assistant}` as
-            | 'user'
-            | 'moderator'
-            | 'assistant-planner'
-            | 'assistant-researcher'
-            | 'assistant-software-engineer'
-            | 'assistant-mike'
-            | 'assistant-academician'
-            | 'context',
+          role: `assistant-${assistant}` as role,
           content: assistantResponse,
           timestamp: Date.now(),
         };

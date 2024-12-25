@@ -17,6 +17,14 @@
             {
                 "name": "Academician",
                 "specialty": "Academic writing, research papers, scientific thoroughness."
+            },
+            {
+                "name": "Software-Engineer",
+                "specialty": "Tasks about software require software expertise and technical skills. Software engineer's job is to both discuss with other bots to assist the task (for example, discuss with Planner assistant to make a plan for a software task), and more importantly, write, manage, debug the codes, if the task requires coding. Software Engineer is professional in all branches of software, from data science and machine learning to web development, algorithms or even cybersecurity."
+            },
+            {
+                "name": "Industrial-Engineer",
+                "specialty": "Expertise in industrial engineering fields, such as supply chain management, linear programming, risk analysis, market analysis, and so on."
             }
         ],
         "commands": [
